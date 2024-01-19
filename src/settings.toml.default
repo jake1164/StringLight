@@ -1,0 +1,16 @@
+WIFI_SSID="your_WIFI"
+WIFI_PASSWORD="your_password"
+
+# (Network Protocol Time) Server Settings
+NTP_HOST="0.adafruit.pool.ntp.org|0.us.pool.ntp.org"
+TZ_OFFSET=-5
+# Adjust for DST - TODO: Adjust once connected to mqtt server?
+DST_ADJUST=1
+# 21600 = 6hr, 43200 = 12hr, 86400 = 24hr
+NTP_INTERVAL=86400 
+
+MQTT_BROKER="your_MQTT_broker_url_or_ip"
+MQTT_USER="your_MQTT_username"
+MQTT_PASSWORD="your_MQTT_password"
+#MQTT_CERTIFICATE="if_used_a_ssl_certificate_to_log_into_broker"
+MQTT_UNIT="light1" # unique identifier to identify the light string
