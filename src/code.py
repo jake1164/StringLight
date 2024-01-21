@@ -60,6 +60,6 @@ while True:
             # Long press option
             pass            
 
-    if time.time() > last + 10:
-        status.display_status() # TODO: rename this.
+    if time.time() > last + 30:
+        status.display_status()
         last = time.time()    

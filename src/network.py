@@ -38,7 +38,7 @@ class WifiNetwork:
             self.set_time()
             self._last_ntp_sync = time.time()
         except Exception as e:
-            print('Unable to set rtc time from NTP server', e);
+            print('Unable to set rtc time from NTP server', e)
 
 
     def set_time(self):
@@ -60,7 +60,7 @@ class WifiNetwork:
         while ntp_try < len(self.NTP_HOST):
             try:
                 ntp = adafruit_ntp.NTP(pool, tz_offset=self.TZ, server=self.NTP_HOST[ntp_try])
-                self._last_ntp_sync = ntp.datetime
+                self._last_ntp_sync = time.time()
                 return ntp.datetime
             except Exception as ex:
                 print(f'Unable to connect to NTP Server {self.NTP_HOST[ntp_try]} with exception:', ex)
@@ -69,6 +69,7 @@ class WifiNetwork:
 
 
     def update_required(self) -> bool:
-        if time.time() >= self._last_ntp_sync + int(self.INTERVAL or 86400):
+        
+        if not self._last_ntp_sync or (self._last_ntp_sync and time.time() >= int(self._last_ntp_sync) + int(self.INTERVAL or 86400)):
             return True
         return False
