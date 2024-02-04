@@ -54,7 +54,6 @@ class Status:
     def display_status(self):
         ''' Normal is 1 slow led flash '''
         if not self._flash: # Only toggle if not in a current pattern
-            bf = supervisor.ticks_ms()
             self._flash = self.Pattern(PATTERNS["NORMAL"])
             self._flash.led_duration_time = supervisor.ticks_ms()
             self._status_led.value = True
@@ -63,13 +62,15 @@ class Status:
     def notify_pulse(self):
         ''' Pulse notify is 2 quick flashes '''
         self._flash = self.Pattern(PATTERNS["PULSE"])
-        self._flash.flashes = 0 if self._flash.flashes <= 1 else self._flash.flashes - 1
-        self._status_led.value = True        
+        self._flash.led_duration_time = supervisor.ticks_ms()
+        self._status_led.value = True
 
 
     def network_error(self):
         ''' Network Error is 5 quick flashes '''
-        pass
+        self._flash = self.Pattern(PATTERNS["NETWORK_ERROR"])
+        self._flash.led_duration_time = supervisor.ticks_ms()
+        self._status_led.value = True
 
 
     class Pattern:

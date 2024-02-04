@@ -41,6 +41,11 @@ class WifiNetwork:
             print('Unable to set rtc time from NTP server', e)
 
 
+    def get_wifi_socketpool() -> socketpool.SocketPool:
+        # TODO: Not working.
+        return socketpool.SocketPool(wifi.radio)
+
+
     def set_time(self):
         new_time = self.get_time()
         if new_time:

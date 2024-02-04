@@ -3,8 +3,6 @@ import time, gc, os
 import neopixel
 import board, pulseio
 from digitalio import DigitalInOut, Direction, Pull
-import bdl
-import adafruit_minimqtt.adafruit_minimqtt as MQTT
 import keypad
 
 # Project Classes
@@ -28,7 +26,8 @@ except Exception as e:
     #TODO: Abort until we have a network. 
     #TODO: Give an LED warning of some type
 
-data = Data(network)
+#data = Data(network.get_wifi_socketpool)
+data = Data()
 button = keypad.Keys((INPUT_BUTTON,), value_when_pressed=False, pull=True)
 pulse_out = pulseio.PulseOut(IR_PIN, frequency=38000, duty_cycle=2**15)
 last = time.time()
@@ -41,6 +40,7 @@ def send_pulse(pulse):
 # Rainbow colours on the NeoPixel
 while True:
     status.tick()
+    data.loop()
     if network.update_required():
         print('Updating rtc')
         network.set_time()
@@ -59,6 +59,8 @@ while True:
         else:
             # Long press option
             pass            
+
+    data.send_data() # data will handle if it should send data or not.
 
     if time.time() > last + 30:
         status.display_status()
