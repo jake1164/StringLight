@@ -2,6 +2,7 @@ import os
 import ssl
 import socketpool
 import wifi
+import time
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
 from beeboard import BeeBoard
 
@@ -66,18 +67,21 @@ class Data:
 
         print(f'Connecting to MQTT Server {self._mqtt_client.broker}')
         self.connect()
+        self._last = 0
 
     def connect(self) -> None:
         ''' Used to connect to the mqtt server. '''
         try:
             self._mqtt_client.connect()
             self._send_data(self.MQTT_TOPIC_STATUS, 'connected')
+            self._last = time.time() 
         except Exception as ex:
             print("Unable to connect to MQTT Server")
 
 
     def loop(self) -> None:
         ''' Loop to process sending / receiving data when not in deep sleep '''
+        #TODO: Loop every time??
         # Attempt to connect
         if not self._mqtt_client.is_connected:
             self.connect()
@@ -87,16 +91,18 @@ class Data:
 
 
     def send_data(self) -> None:
-        if not self._mqtt_client.is_connected:
-            self.connect()
-        
-        if self._mqtt_client.is_connected:
-            # TODO: hook up logging
-            print('Publishing data')
-            self._send_data(self.MQTT_TOPIC_V_BAT, self._bee_board.get_battery())
-            print('finished publishing data')
-        else:
-            print('Unable to publish - mqtt client not connected')
+        if time.time() > self._last + self._mqtt_data_interval:
+            if not self._mqtt_client.is_connected:
+                self.connect()
+            
+            if self._mqtt_client.is_connected:
+                # TODO: hook up logging
+                print('Publishing data')
+                self._send_data(self.MQTT_TOPIC_V_BAT, self._bee_board.get_battery())
+                print('finished publishing data')
+                self._last = time.time()
+            else:
+                print('Unable to publish - mqtt client not connected')
 
 
     def send_toggle(self) -> None:
