@@ -13,7 +13,7 @@ from data import Data
 IR_PIN = board.D9
 INPUT_BUTTON = board.D5
 #STATUS_PIN = board.D3
-REMOTE_PULSE = array.array('H', [9098, 4502, 569, 1661, 569, 583, 568, 1660, 569, 582, 569, 1659, 570, 582, 568, 1660, 569, 590, 570, 581, 570, 1659, 570, 580, 570, 1659, 571, 580, 570, 1657, 568, 583, 543, 1692, 542, 1685, 540, 1687, 539, 1689, 539, 613, 538, 1690, 538, 614, 540, 612, 540, 619, 540, 613, 538, 614, 538, 614, 538, 1690, 539, 612, 538, 1689, 539, 1689, 538, 1688, 1662, 65535])
+IR_PULSE = array.array('H', [9098, 4502, 569, 1661, 569, 583, 568, 1660, 569, 582, 569, 1659, 570, 582, 568, 1660, 569, 590, 570, 581, 570, 1659, 570, 580, 570, 1659, 571, 580, 570, 1657, 568, 583, 543, 1692, 542, 1685, 540, 1687, 539, 1689, 539, 613, 538, 1690, 538, 614, 540, 612, 540, 619, 540, 613, 538, 614, 538, 614, 538, 1690, 539, 612, 538, 1689, 539, 1689, 538, 1688, 1662, 65535])
 
 status = Status()
 
@@ -32,9 +32,10 @@ button = keypad.Keys((INPUT_BUTTON,), value_when_pressed=False, pull=True)
 pulse_out = pulseio.PulseOut(IR_PIN, frequency=38000, duty_cycle=2**15)
 last = time.time()
 
-def send_pulse(pulse):
+def send_pulse(pulse, mode: str):
     pulse_out.send(pulse)
     status.notify_pulse()
+    data.send_toggle(mode)
     last = time.time()
 
 # Rainbow colours on the NeoPixel
@@ -55,7 +56,7 @@ while True:
         print(f'button pressed for {length} seconds')
         if length <= 1:
             #toggle
-            send_pulse(REMOTE_PULSE)            
+            send_pulse(IR_PULSE, "local")
         else:
             # Long press option
             pass            

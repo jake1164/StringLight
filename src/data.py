@@ -30,14 +30,23 @@ class Data:
         # TODO: Check that values have been provided
 
         self._bee_board = BeeBoard()
+        DEVICE = os.getenv('MQTT_DEVICE', 'string_light')
+
         self.MQTT_BASE_TOPIC = BASE_TOPIC.format(
                 os.getenv('MQTT_DISCOVERY_UNIT', 'homeassistant'), 
                 os.getenv('MQTT_LOCATION_UNIT', 'location'), 
-                os.getenv('MQTT_UNIT', 'string_light'))
+                DEVICE)
 
         # How often to send data. Can eventually be updated by an MQTT data message.
         self._mqtt_data_interval = os.getenv('MQTT_SEND_DATA', 300)
         self._mqtt_deep_sleep_interval = os.getenv('MQTT_DEEP_SLEEP', 0)
+
+        self.SUBSCRIPTION_TOPICS = [
+            (f"{self.MQTT_BASE_TOPIC}/req_toggle", self._on_req_toggle),
+            (f"{self.MQTT_BASE_TOPIC}/send_data", self._on_send_data),
+            (f"{DEVICE}/debug", self._on_debug),
+        ]
+
         # topics to subscribe
         self.MQTT_IR_REQ_TOGGLE = f"{self.MQTT_BASE_TOPIC}/ir_req_toggle"
 
@@ -61,13 +70,15 @@ class Data:
             socket_pool=pool,
             ssl_context=ssl_context,
         )
-        self._mqtt_client.on_connect = self.connected
-        self._mqtt_client.on_disconnected = self.disconnected
-        self._mqtt_client.on_message = self.message
+
+
+        self._mqtt_client.on_connect = self._on_connected
+        self._mqtt_client.on_disconnected = self._on_disconnected
+        self._last = 0
 
         print(f'Connecting to MQTT Server {self._mqtt_client.broker}')
         self.connect()
-        self._last = 0
+
 
     def connect(self) -> None:
         ''' Used to connect to the mqtt server. '''
@@ -105,8 +116,9 @@ class Data:
                 print('Unable to publish - mqtt client not connected')
 
 
-    def send_toggle(self) -> None:
-        pass
+    def send_toggle(self, mode: str) -> None:
+        ''' Sent anytime the IR pulse was sent, mode is remote or local'''
+        self._send_data(self.MQTT_TOPIC_IR_TOGGLED, mode)
 
 
     def _send_data(self, topic, data):
@@ -118,16 +130,44 @@ class Data:
 
 
         # THESE NEED TO BE EVENTS subscribed and raised.
-    def connected(self, client, userdata, flags, rc) -> None:
-        print(f"Connected to MQTT server {self.BROKER} at {client.broker}")
+    def _on_connected(self, client, userdata, flags, rc) -> None:
+        print(f"Connected to MQTT server")# {self.BROKER} at {client.broker}")
+        
+        for msg in self.SUBSCRIPTION_TOPICS:
+            print(f'subscribing to: {msg[0]}')
+            self._mqtt_client.subscribe(msg[0])
+            self._mqtt_client.add_topic_callback(msg[0], msg[1])
 
 
-    def disconnected(self, userdata, rc) -> None:
+    def _on_disconnected(self, userdata, rc) -> None:
         print("Disconnected from MQTT server")
 
 
-    def message(self, client, message) -> None:
-        print(f"New message on topic: {message}")
+    def _on_req_toggle(self, client, topic, message):
+         ''' 
+            When a request toggle message comes in via MQTT we need to validate that its authentic
+            which will hopefully be accomplished via a list of authorized users. 
+         '''
+         print(f'Received subscribed request toggle command:')# {topic}, {message}')
+         #TODO - validate message
+         #TODO - Toggle Light
+        # Raise event so it can be sent
+
+
+    def _on_send_data(self, client, topic, message):
+        ''' 
+            Client requested sending of data
+        '''
+        print('Recieved request to send data')
+        self.send_data()
+
+
+    def _on_debug(self, client, topic, message):
+        '''
+            Client requested going into / out of debug mode
+        '''
+        print("debug request sent")
+
 
     @property
     def is_connected(self) -> bool:

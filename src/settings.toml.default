@@ -21,4 +21,4 @@ MQTT_DEEP_SLEEP=0 # How long should the unit go into deep sleep
 # MQTT Topics used for publishing the data
 MQTT_DISCOVERY_UNIT="homeassistant" #Used by Home Assistant as the discovery prefix, defaults to homeassistant
 MQTT_LOCATION_UNIT="location" #Location where the MQTT_sensors are located. 
-MQTT_UNIT="light1" # unique identifier to identify the light string
+MQTT_DEVICE="light1" # unique identifier to identify the light string
