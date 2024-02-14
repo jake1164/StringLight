@@ -60,7 +60,7 @@ class Data:
 
         # TODO: Nice to not require socketpool in here
         pool = socketpool.SocketPool(wifi.radio)
-
+        self.timeout = 5
         self._mqtt_client = MQTT.MQTT(
             #broker=f'"{broker}"',
             broker=BROKER,
@@ -69,6 +69,7 @@ class Data:
             password=PASSWORD,
             socket_pool=pool,
             ssl_context=ssl_context,
+            socket_timeout=self.timeout
         )
 
 
@@ -98,7 +99,7 @@ class Data:
             self.connect()
 
         #catch connect exception and not send unless connected.
-        self._mqtt_client.loop()
+        self._mqtt_client.loop(self.timeout + 1)
 
 
     def send_data(self) -> None:
