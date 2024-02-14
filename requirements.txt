@@ -1,0 +1,5 @@
+adafruit_ntp==3.0.12
+adafruit_ds3231==2.4.20
+adafruit_minimqtt==7.5.8
+adafruit_bus_device==5.2.8
+adafruit_register==1.9.18

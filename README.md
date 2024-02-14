@@ -1,1 +1,8 @@
-# StringLight
+# StringLight - A project to interactively turn on an string that uses an IR remote control.
+
+### Installing on device 
+- Install CircuitPython 9.x on Bee S3 or Bee Data Logger
+- From root folder install required libraries (circup install -r requirements.txt)
+- Copy files from src to device
+- Rename (or copy) settings.toml.default to settings.toml
+- Update settings in settings.toml file to match your network and mqtt login
