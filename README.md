@@ -1,4 +1,8 @@
-# StringLight - A project to interactively turn on an string that uses an IR remote control.
+# StringLight - A project to interactively turn on a solar light string that uses an IR remote control.
+![figure 1](/images/stringlights.jpg)
+[SunForce](https://sunforceproducts.com/renewable-energy-products-wind-solar-sunforce/our-products/lawn-and-garden/15-led-bulbs-solar-string-lights-with-remote-control/) LED Bulbs Solar String Light w/ Remote Control
+
+
 
 ## Hardware List (links for reference only)
 SmartBee S3 or Data Logger microcontroller (S3 recommended for low power consumption) [smartbee](https://smartbeedesigns.com/)
