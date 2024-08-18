@@ -7,7 +7,7 @@ import adafruit_minimqtt.adafruit_minimqtt as MQTT
 from beeboard import BeeBoard
 
 # <prefix>/<component>/<nodeid>/<objectid>/topic
-# homeassistant/binary_sensor/patio/stringlight1
+# homeassistant/binary_sensor/patio/stringlight1/v_bat/config
 BASE_TOPIC = "{}/binary_sensor/{}/{}" 
 #TODO: binary_sensor is wrong
 DISCOVERY_CONFIG_TOPIC = "{}/binary_sensor/{}/config"
@@ -41,12 +41,18 @@ class Data:
         self._mqtt_data_interval = os.getenv('MQTT_SEND_DATA', 300)
         self._mqtt_deep_sleep_interval = os.getenv('MQTT_DEEP_SLEEP', 0)
 
+        # TODO: make a topic a class. 
         self.SUBSCRIPTION_TOPICS = [
             (f"{self.MQTT_BASE_TOPIC}/req_toggle", self._on_req_toggle),
-            (f"{self.MQTT_BASE_TOPIC}/send_data", self._on_send_data),
-            (f"{DEVICE}/debug", self._on_debug),
+            (f"{self.MQTT_BASE_TOPIC}/req_send_data", self._on_send_data),
+            (f"{DEVICE}/req_debug", self._on_debug),
         ]
 
+        # Stack of data messages to publish (discovery topic, discovery Message)
+        # Stack gets emptied so the discovery messages are only sent once per boot. 
+        self.DISCOVERY_MESSAGES = [
+            (f"{self.MQTT_BASE_TOPIC}/req_toggle", f"message")
+        ]
         # topics to subscribe
         self.MQTT_IR_REQ_TOGGLE = f"{self.MQTT_BASE_TOPIC}/ir_req_toggle"
 
@@ -99,6 +105,7 @@ class Data:
             self.connect()
 
         #catch connect exception and not send unless connected.
+        #TODO: Need to catch a timeout or we bring the whole thing down.
         self._mqtt_client.loop(self.timeout + 1)
 
 
@@ -142,6 +149,8 @@ class Data:
 
     def _on_disconnected(self, userdata, rc) -> None:
         print("Disconnected from MQTT server")
+        for msg in self.SUBSCRIPTION_TOPICS:
+            self._mqtt_client.unsubscribe(msg[0])
 
 
     def _on_req_toggle(self, client, topic, message):
