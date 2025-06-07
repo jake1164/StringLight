@@ -19,24 +19,19 @@ status = Status()
 
 try:
     # network handles functionality for connecting to wifi, connecting to the NTP server.
-    #TODO: Connect to mqtt server inside network?
     network = WifiNetwork()
 except Exception as e:
     print('Network Failure. ', e)
-    #TODO: Abort until we have a network. 
-    #TODO: Give an LED warning of some type
 
-#data = Data(network.get_wifi_socketpool)
-data = Data()
-button = keypad.Keys((INPUT_BUTTON,), value_when_pressed=False, pull=True)
 pulse_out = pulseio.PulseOut(IR_PIN, frequency=38000, duty_cycle=2**15)
+button = keypad.Keys((INPUT_BUTTON,), value_when_pressed=False, pull=True)
 last = time.time()
 
-def send_pulse(pulse, mode: str):
-    pulse_out.send(pulse)
+def send_pulse():
+    pulse_out.send(IR_PULSE)
     status.notify_pulse()
-    data.send_toggle(mode)
-    last = time.time()
+
+data = Data(toggle_callback=send_pulse)
 
 # Rainbow colours on the NeoPixel
 while True:
@@ -56,7 +51,8 @@ while True:
         print(f'button pressed for {length} seconds')
         if length <= 1:
             #toggle
-            send_pulse(IR_PULSE, "local")
+            send_pulse()
+            data.send_toggle("local")
         else:
             # Long press option
             pass            
