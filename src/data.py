@@ -6,20 +6,10 @@ import time
 import json
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
 from beeboard import BeeBoard
-
-# <prefix>/<component>/<nodeid>/<objectid>/topic
-# homeassistant/binary_sensor/patio/stringlight1/v_bat/config
-BASE_TOPIC = "{}/binary_sensor/{}/{}" 
-#TODO: binary_sensor is wrong
-DISCOVERY_CONFIG_TOPIC = "{}/binary_sensor/{}/config"
-DISCOVERY_CONFIG_DATA = '''
-    {"name": null, "device_class": "motion", 
-    "state_topic": "{}", "unique_id": "{}",
-    "device": {"identifiers": ["{}"], "name": {}}
-    }
-'''
+from device_messages import TopicManager
 
 class Data:
+    """Handles MQTT data communication for the device."""
     def __init__(self, toggle_callback=None) -> None:
         ''' Setup the MQTT server here.
             toggle_callback is called when a command to toggle the light is
@@ -36,36 +26,43 @@ class Data:
         # Device details
         self.device_id = os.getenv('MQTT_DEVICE', 'string_light')
         self.discovery_prefix = os.getenv('MQTT_DISCOVERY_UNIT', 'homeassistant')
+        self.location = os.getenv('MQTT_LOCATION_UNIT', 'location')
 
         # TODO: Check that values have been provided
 
         self._bee_board = BeeBoard()
 
-        self.MQTT_BASE_TOPIC = BASE_TOPIC.format(
-                self.discovery_prefix,
-                os.getenv('MQTT_LOCATION_UNIT', 'location'),
-                self.device_id)
+        # Create the topic manager
+        self.topic_manager = TopicManager(
+            device_id=self.device_id,
+            discovery_prefix=self.discovery_prefix,
+            location=self.location
+        )
+        
+        # Print all topics for verification
+        self.topic_manager.print_all_topics()
 
         # How often to send data. Can eventually be updated by an MQTT data message.
         self._mqtt_data_interval = os.getenv('MQTT_SEND_DATA', 300)
         self._mqtt_deep_sleep_interval = os.getenv('MQTT_DEEP_SLEEP', 0)
 
-        # topics to publish/subscribe
-        self.command_topic = f"{self.device_id}/set"
-        self.state_topic = f"{self.device_id}/state"
-        self.availability_topic = f"{self.device_id}/availability"
-        self.MQTT_TOPIC_V_BAT = f"{self.device_id}/v_bat"
-        self.MQTT_TOPIC_IR_TOGGLED = f"{self.device_id}/ir_toggled"
-        self.MQTT_IR_REQ_TOGGLE = f"{self.MQTT_BASE_TOPIC}/ir_req_toggle"
+        # Get topics from the topic manager
+        self.command_topic = self.topic_manager.command_topic
+        self.state_topic = self.topic_manager.state_topic
+        self.availability_topic = self.topic_manager.availability_topic
+        self.MQTT_TOPIC_V_BAT = self.topic_manager.v_bat_topic
+        self.MQTT_TOPIC_IR_TOGGLED = self.topic_manager.ir_toggled_topic
+        self.MQTT_IR_REQ_TOGGLE = self.topic_manager.ir_req_toggle_topic
         self._state = "OFF"
 
-        # TODO: make a topic a class.
-        self.SUBSCRIPTION_TOPICS = [
-            (self.command_topic, self._on_set),
-            (f"{self.MQTT_BASE_TOPIC}/req_toggle", self._on_req_toggle),
-            (f"{self.MQTT_BASE_TOPIC}/req_send_data", self._on_send_data),
-            (f"{self.device_id}/req_debug", self._on_debug),
-        ]
+        # Get subscription topics
+        callbacks = {
+            'command': self._on_set,
+            'req_toggle': self._on_req_toggle,
+            'req_send_data': self._on_send_data,
+            'req_debug': self._on_debug
+        }
+        self.SUBSCRIPTION_TOPICS = self.topic_manager.get_subscription_topics(callbacks)
 
         ssl_context = ssl.create_default_context()
         # SSL Secrets get loaded here?
@@ -98,11 +95,13 @@ class Data:
         ''' Used to connect to the mqtt server. '''
         try:
             self._mqtt_client.connect()
-            self._send_data(self.availability_topic, 'online')
+            print("Connected to MQTT server, sending availability")
+            self._mqtt_client.publish(self.availability_topic, 'online', retain=True)
+            print("Sending discovery messages")
             self._send_discovery()
             self._last = time.time()
         except Exception as ex:
-            print("Unable to connect to MQTT Server")
+            print(f"Unable to connect to MQTT Server: {ex}")
 
 
     def loop(self) -> None:
@@ -125,7 +124,7 @@ class Data:
             if self._mqtt_client.is_connected:
                 # TODO: hook up logging
                 print('Publishing data')
-                self._send_data(self.MQTT_TOPIC_V_BAT, self._bee_board.get_battery())
+                self._send_data(self.MQTT_TOPIC_V_BAT, self._bee_board.get_battery_voltage())
                 print('finished publishing data')
                 self._last = time.time()
             else:
@@ -143,41 +142,28 @@ class Data:
         try:
             print(f'Attempting to publish {topic} with {data}')
             self._mqtt_client.publish(topic, data)
+            print(f'Successfully published to {topic}')
         except Exception as ex:
-            print(f'Unable to send {topic}')
+            print(f'Unable to send {topic}: {ex}')
 
     def _send_discovery(self):
         '''Publish Home Assistant discovery messages.'''
-        battery_config_topic = f"{self.discovery_prefix}/sensor/{self.device_id}/battery/config"
-        battery_payload = {
-            'name': f'{self.device_id} Battery',
-            'state_topic': self.MQTT_TOPIC_V_BAT,
-            'unit_of_measurement': 'V',
-            'device_class': 'voltage',
-            'unique_id': f'{self.device_id}_battery',
-            'availability_topic': self.availability_topic,
-            'device': {
-                'identifiers': [self.device_id],
-                'name': self.device_id
-            }
-        }
-        self._mqtt_client.publish(battery_config_topic, json.dumps(battery_payload), retain=True)
-
-        switch_config_topic = f"{self.discovery_prefix}/switch/{self.device_id}/main/config"
-        switch_payload = {
-            'name': self.device_id,
-            'command_topic': self.command_topic,
-            'state_topic': self.state_topic,
-            'payload_on': 'ON',
-            'payload_off': 'OFF',
-            'unique_id': f'{self.device_id}_switch',
-            'availability_topic': self.availability_topic,
-            'device': {
-                'identifiers': [self.device_id],
-                'name': self.device_id
-            }
-        }
-        self._mqtt_client.publish(switch_config_topic, json.dumps(switch_payload), retain=True)
+        discovery_messages = self.topic_manager.get_discovery_messages()
+        
+        print("Publishing discovery messages:")
+        for topic, payload in discovery_messages:
+            print(f"  Topic: {topic}")
+            print(f"  Payload: {payload}")
+            # Ensure the payload is valid JSON before sending
+            try:
+                # Verify the JSON payload
+                test_json = json.loads(payload)
+                print(f"  Payload is valid JSON: {test_json}")
+                # Send with retain=True to ensure Home Assistant picks it up
+                self._mqtt_client.publish(topic, payload, retain=True)
+                print(f"  Published to {topic}")
+            except json.JSONDecodeError as e:
+                print(f"  ERROR: Invalid JSON payload: {e}")
 
 
         # THESE NEED TO BE EVENTS subscribed and raised.
