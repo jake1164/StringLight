@@ -4,9 +4,9 @@ import supervisor
 from digitalio import DigitalInOut, Direction, Pull
 
 PATTERNS = {
-    "NORMAL":
+    "STATUS_OK":
     {
-        "type": "NORMAL", # RENAME ME FFS
+        "type": "STATUS_OK",
         "flashes": 1,
         "led_duration":  1000, # in ms?
         "flash_pause": 500 # in ms pause between flashes
@@ -20,10 +20,16 @@ PATTERNS = {
     },
     "NETWORK_ERROR":
     {
-        "type": "NETWORK_ERROR", # RENAME ME FFS
+        "type": "NETWORK_ERROR",
         "flashes": 5,
         "led_duration":  500, # in seconds?
         "flash_pause": 200 # pause between flashes
+    },
+    "STARTUP": {
+        "type": "STARTUP",
+        "flashes": 3,
+        "led_duration":  200, # in seconds?
+        "flash_pause": 100 # pause between flashes
     }
 }
 
@@ -34,6 +40,8 @@ class Status:
         self._status_led.direction = Direction.OUTPUT
         self._status_led.value = False
         self._flash = None
+        # flash startup
+        self.startup()
 
 
     def tick(self):
@@ -52,9 +60,9 @@ class Status:
 
 
     def display_status(self):
-        ''' Normal is 1 slow led flash '''
+        ''' Status_ok is 1 slow led flash '''
         if not self._flash: # Only toggle if not in a current pattern
-            self._flash = self.Pattern(PATTERNS["NORMAL"])
+            self._flash = self.Pattern(PATTERNS["STATUS_OK"])
             self._flash.led_duration_time = supervisor.ticks_ms()
             self._status_led.value = True
 
@@ -69,6 +77,13 @@ class Status:
     def network_error(self):
         ''' Network Error is 5 quick flashes '''
         self._flash = self.Pattern(PATTERNS["NETWORK_ERROR"])
+        self._flash.led_duration_time = supervisor.ticks_ms()
+        self._status_led.value = True
+
+
+    def startup(self):
+        ''' Startup is 3 quick flashes '''
+        self._flash = self.Pattern(PATTERNS["STARTUP"])
         self._flash.led_duration_time = supervisor.ticks_ms()
         self._status_led.value = True
 

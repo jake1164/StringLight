@@ -4,6 +4,7 @@ import neopixel
 import board, pulseio
 from digitalio import DigitalInOut, Direction, Pull
 import keypad
+import supervisor
 
 # Project Classes
 from network import WifiNetwork
@@ -25,7 +26,7 @@ except Exception as e:
 
 pulse_out = pulseio.PulseOut(IR_PIN, frequency=38000, duty_cycle=2**15)
 button = keypad.Keys((INPUT_BUTTON,), value_when_pressed=False, pull=True)
-last = time.time()
+last = None
 
 def send_pulse():
     pulse_out.send(IR_PULSE)
@@ -54,11 +55,12 @@ while True:
             send_pulse()
             data.send_toggle("local")
         else:
-            # Long press option
-            pass            
+            # Long press option: restart controller
+            print('Long press detected, restarting controller...')
+            supervisor.reload()
 
     data.send_data() # data will handle if it should send data or not.
 
-    if time.time() > last + 15:
+    if last is None or time.time() > last + 15:
         status.display_status()
-        last = time.time()    
+        last = time.time()
