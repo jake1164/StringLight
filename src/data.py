@@ -69,7 +69,7 @@ class Data:
 
         # TODO: Nice to not require socketpool in here
         pool = socketpool.SocketPool(wifi.radio)
-        self.timeout = 5
+        # NOTE: the socket_timeout default is 10 seconds, the loop() method will block for the duration of the timeout.
         self._mqtt_client = MQTT.MQTT(
             #broker=f'"{broker}"',
             broker=BROKER,
@@ -78,7 +78,7 @@ class Data:
             password=PASSWORD,
             socket_pool=pool,
             ssl_context=ssl_context,
-            socket_timeout=self.timeout
+            socket_timeout=0.1
         )
         self._mqtt_client.will_set(self.availability_topic, "offline", retain=True)
 
@@ -106,14 +106,10 @@ class Data:
 
     def loop(self) -> None:
         ''' Loop to process sending / receiving data when not in deep sleep '''
-        #TODO: Loop every time??
-        # Attempt to connect
         if not self._mqtt_client.is_connected:
             self.connect()
 
-        #catch connect exception and not send unless connected.
-        #TODO: Need to catch a timeout or we bring the whole thing down.
-        self._mqtt_client.loop(self.timeout + 1)
+        self._mqtt_client.loop(timeout=0.1)
 
 
     def send_data(self) -> None:
