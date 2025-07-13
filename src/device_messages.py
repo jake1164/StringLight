@@ -102,6 +102,7 @@ class SwitchTopic(DiscoveryTopic):
             'state_topic': self.state_topic,
             'payload_on': 'ON',
             'payload_off': 'OFF',
+            'state_off': 'OFF',  # Set initial state to OFF
             'unique_id': f'{self.device_id}_switch',
             'availability_topic': availability_topic,
             'device': {
@@ -139,7 +140,7 @@ class TopicManager:
         
         Args:
             callbacks: Dictionary mapping topic names to callback functions
-                       {'command': function, 'req_toggle': function, ...}
+                       {'command': function, 'req_toggle': function, 'req_reset': function, ...}
         
         Returns:
             List of tuples (topic, callback)
@@ -150,6 +151,7 @@ class TopicManager:
             (f"{self.base_topic}/req_toggle", callbacks.get('req_toggle')),
             (f"{self.base_topic}/req_send_data", callbacks.get('req_send_data')),
             (f"{self.device_id}/req_debug", callbacks.get('req_debug')),
+            (f"{self.device_id}/req_reset", callbacks.get('req_reset')),
         ]
         return [(topic, cb) for topic, cb in topics if cb is not None]
     
@@ -180,6 +182,10 @@ class TopicManager:
         print(f"battery_topic.config_topic: {self.battery_topic.config_topic}")
         print(f"switch_topic.config_topic: {self.switch_topic.config_topic}")
         print("=== End Topics ===")
+    
+    def get_reset_state_message(self):
+        """Get a message to reset the device state to OFF"""
+        return (self.state_topic, "OFF")
 
 
 # Standard topics used by the device
@@ -191,6 +197,7 @@ DEVICE_TOPICS = {
     'ir_toggled': 'ir_toggled',     # Topic for reporting IR toggle events
     'req_toggle': 'req_toggle',     # Topic for requesting toggle
     'req_send_data': 'req_send_data', # Topic for requesting data update
-    'req_debug': 'req_debug'        # Topic for requesting debug mode
+    'req_debug': 'req_debug',       # Topic for requesting debug mode
+    'req_reset': 'req_reset'        # Topic for requesting state reset to OFF
 }
 

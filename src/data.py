@@ -60,7 +60,8 @@ class Data:
             'command': self._on_set,
             'req_toggle': self._on_req_toggle,
             'req_send_data': self._on_send_data,
-            'req_debug': self._on_debug
+            'req_debug': self._on_debug,
+            'req_reset': self._on_reset
         }
         self.SUBSCRIPTION_TOPICS = self.topic_manager.get_subscription_topics(callbacks)
 
@@ -160,6 +161,11 @@ class Data:
                 print(f"  Published to {topic}")
             except json.JSONDecodeError as e:
                 print(f"  ERROR: Invalid JSON payload: {e}")
+        
+        # After discovery, explicitly set the state to OFF to ensure sync
+        print("Setting initial state to OFF")
+        self._state = "OFF"
+        self._send_data(self.state_topic, self._state)
 
 
         # THESE NEED TO BE EVENTS subscribed and raised.
@@ -223,6 +229,16 @@ class Data:
             Client requested going into / out of debug mode
         '''
         print("debug request sent")
+
+
+    def _on_reset(self, client, topic, message):
+        '''
+            Client requested resetting the state to OFF
+        '''
+        print("Reset request received - setting state to OFF")
+        self._state = "OFF"
+        self._send_data(self.state_topic, self._state)
+        self._send_data(self.MQTT_TOPIC_IR_TOGGLED, 'reset')
 
 
     @property
