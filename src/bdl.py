@@ -9,8 +9,6 @@ from analogio import AnalogIn
 import adafruit_ds3231
 
 
-
-
 i2c = board.I2C()
 rtc = adafruit_ds3231.DS3231(i2c)
 
@@ -26,7 +24,9 @@ vbus_sense = DigitalInOut(board.VBUS_SENSE)
 vbus_sense.direction = Direction.INPUT
 # Setup the BATTERY voltage sense pin
 vbat_voltage = AnalogIn(board.BATTERY)
-     
+
+def get_adc_voltage(pin):
+    return (pin.value * 3.3) / 65536     
 # Helper functions
 def set_pixel_power(state):
     """Enable or Disable power to the onboard NeoPixel to either show colour, or to turn off to reduce current consumption."""
@@ -37,37 +37,6 @@ def set_ldo2_power(state):
     """Enable or Disable power to the onboard NeoPixel to either show colour, or to turn off to reduce current consumption."""
     global ldo2
     ldo2.value = state
-
-def set_time():
-        t = time.struct_time((2017, 10, 29, 15, 14, 15, 0, -1, -1))
-        # you must set year, mon, date, hour, min, sec and weekday
-        # yearday is not supported, isdst can be set but we don't do anything with it at this time
-        print("Setting time to:", t)  # uncomment for debugging
-        rtc.datetime = t
-        print()
-
-def print_time():
-    if False:  # change to True if you want to set the time!
-    #                     year, mon, date, hour, min, sec, wday, yday, isdst
-        t = time.struct_time((2017, 10, 29, 15, 14, 15, 0, -1, -1))
-        # you must set year, mon, date, hour, min, sec and weekday
-        # yearday is not supported, isdst can be set but we don't do anything with it at this time
-        print("Setting time to:", t)  # uncomment for debugging
-        rtc.datetime = t
-        print()
-# pylint: enable-msg=using-constant-test
-
-# Main loop:
-    while True:
-        t = rtc.datetime
-        # print(t)     # uncomment for debugging
-        print(
-            "The date is {} {}/{}/{}".format(
-                days[int(t.tm_wday)], t.tm_mday, t.tm_mon, t.tm_year
-            )
-        )
-        print("The time is {}:{:02}:{:02}".format(t.tm_hour, t.tm_min, t.tm_sec))
-        time.sleep(1)  # wait a second
 
 
 def get_vbus_present():
@@ -82,7 +51,7 @@ def get_battery_voltage():
     global vbat_voltage
     ADC_RESOLUTION = 2 ** 16 -1
     AREF_VOLTAGE = 3.3
-    R1 = 422000
+    R1 = 442000
     R2 = 160000
     return (vbat_voltage.value/ADC_RESOLUTION*AREF_VOLTAGE*(R1+R2)/R2)
 
@@ -99,4 +68,3 @@ def rgb_color_wheel(wheel_pos):
         wheel_pos -= 170
         return wheel_pos * 3, 255 - wheel_pos * 3, 0
     
-
