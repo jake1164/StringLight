@@ -5,9 +5,7 @@
         "reportShadowedImports": "none"
     },
     "python.analysis.extraPaths": [
-        "",
-        "c:\\Users\\jake1\\.vscode\\extensions\\joedevivo.vscode-circuitpython-0.2.0-win32-x64\\stubs",
-        "c:\\Users\\jake1\\AppData\\Roaming\\Code\\User\\globalStorage\\joedevivo.vscode-circuitpython\\bundle\\20240307\\adafruit-circuitpython-bundle-py-20240307\\lib"
+        "./src/stubs"
     ],
     "circuitpython.board.version": null
 }

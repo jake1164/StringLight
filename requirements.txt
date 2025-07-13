@@ -1,7 +1,8 @@
-adafruit_ntp==3.3.0
-adafruit_connection_manager==3.1.1
-adafruit_ticks==1.1.0
-adafruit_ds3231==2.4.20
-adafruit_minimqtt==7.10.1
-adafruit_bus_device==5.2.9
-adafruit_register==1.9.18
+Found device smartbeedesigns_bee_data_logger at G:\, running CircuitPython 9.2.8.
+adafruit_ntp==3.3.4
+adafruit_connection_manager==3.1.5
+adafruit_ticks==1.1.4
+adafruit_ds3231==2.4.25
+adafruit_minimqtt==8.0.2
+adafruit_bus_device==5.2.13
+adafruit_register==1.10.4

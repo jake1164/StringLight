@@ -36,3 +36,14 @@ SmartBee S3 or Data Logger microcontroller (S3 recommended for low power consump
  NOTE: Will eventually work with a Bee S3 without RTC and no data logging installed (https://www.devboarddb.com/details/8Pr9-73v4cqhcKhvoGybx)
 - CircuitPython 9.x (even though its in beta)
 - Circup for installing libraries (https://docs.circuitpython.org/projects/circup/en/latest/index)
+
+## Updating CircuitPython Stubs
+
+1. Download the latest stubs from [Adafruit_CircuitPython_Typing releases](https://github.com/adafruit/Adafruit_CircuitPython_Typing/releases).
+2. Unzip the downloaded archive into the `src/stubs` directory.
+3. Ensure that `src/stubs` is included in your VS Code Python analysis paths. This is already set in `.vscode/settings.json`:
+   ```json
+   "python.analysis.extraPaths": [
+       "./src/stubs"
+   ]
+   ```
