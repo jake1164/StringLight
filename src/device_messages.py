@@ -85,17 +85,17 @@ class BatteryTopic(DiscoveryTopic):
 class SwitchTopic(DiscoveryTopic):
     """Switch/light control topic"""
     def __init__(self, discovery_prefix: str, device_id: str):
-        super().__init__(discovery_prefix, "switch", device_id, "main")
+        super().__init__(discovery_prefix, "light", device_id, "main")
         self.command_topic = f"{device_id}/set"
         self.state_topic = f"{device_id}/state"
     
     @property
     def config_topic(self) -> str:
         """Get the discovery configuration topic exactly as before"""
-        return f"{self.discovery_prefix}/switch/{self.device_id}/main/config"
+        return f"{self.discovery_prefix}/light/{self.device_id}/main/config"
         
     def get_discovery_payload(self, availability_topic: str):
-        """Get the discovery payload for a switch"""
+        """Get the discovery payload for a light"""
         return {
             'name': self.device_id,
             'command_topic': self.command_topic,
@@ -103,7 +103,7 @@ class SwitchTopic(DiscoveryTopic):
             'payload_on': 'ON',
             'payload_off': 'OFF',
             'state_off': 'OFF',  # Set initial state to OFF
-            'unique_id': f'{self.device_id}_switch',
+            'unique_id': f'{self.device_id}_light',
             'availability_topic': availability_topic,
             'device': {
                 'identifiers': [self.device_id],
