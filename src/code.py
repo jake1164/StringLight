@@ -59,6 +59,6 @@ while True:
 
     data.send_data() # data will handle if it should send data or not.
 
-    if time.time() > last + 30:
+    if time.time() > last + 15:
         status.display_status()
         last = time.time()    
