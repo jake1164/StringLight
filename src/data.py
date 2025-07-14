@@ -21,6 +21,7 @@ class Data:
         USERNAME = os.getenv('MQTT_USER')
         PASSWORD = os.getenv('MQTT_PASSWORD')
 
+        # Set the callback method for toggling the light (Sending the IR pulse)
         self._toggle_callback = toggle_callback
 
         # Device details
@@ -81,7 +82,8 @@ class Data:
             ssl_context=ssl_context,
             socket_timeout=0.1
         )
-        self._mqtt_client.will_set(self.availability_topic, "offline", retain=True)
+        # will_set is used to set the last will and testament message for the MQTT client.
+        self._mqtt_client.will_set(self.availability_topic, "offline", retain=True, qos=1)
 
 
         self._mqtt_client.on_connect = self._on_connected
@@ -97,7 +99,7 @@ class Data:
         try:
             self._mqtt_client.connect()
             print("Connected to MQTT server, sending availability")
-            self._mqtt_client.publish(self.availability_topic, 'online', retain=True)
+            self._mqtt_client.publish(self.availability_topic, 'online', qos=1)
             print("Sending discovery messages")
             self._send_discovery()
             self._last = time.time()
@@ -108,20 +110,27 @@ class Data:
     def loop(self) -> None:
         ''' Loop to process sending / receiving data when not in deep sleep '''
         if not self._mqtt_client.is_connected:
+            print("MQTT client not connected, attempting to reconnect...")
             self.connect()
 
-        self._mqtt_client.loop(timeout=0.1)
+        self._mqtt_client.loop(timeout=1.1)
 
 
     def send_data(self) -> None:
+        ''' 
+            Send data to the MQTT server at the specified interval.
+            This will send the battery voltage and the state of the device.
+        '''        
         if time.time() > self._last + self._mqtt_data_interval:
             if not self._mqtt_client.is_connected:
+                print('MQTT client not connected, attempting to reconnect...')
                 self.connect()
             
             if self._mqtt_client.is_connected:
                 # TODO: hook up logging
                 print('Publishing data')
                 self._send_data(self.MQTT_TOPIC_V_BAT, self._bee_board.get_battery_voltage())
+                self._send_data(self.state_topic, self._state)
                 print('finished publishing data')
                 self._last = time.time()
             else:
@@ -132,13 +141,13 @@ class Data:
         '''Sent anytime the IR pulse was sent. mode indicates source.'''
         self._state = 'ON' if self._state == 'OFF' else 'OFF'
         self._send_data(self.state_topic, self._state)
-        self._send_data(self.MQTT_TOPIC_IR_TOGGLED, mode)
+        #self._send_data(self.MQTT_TOPIC_IR_TOGGLED, mode)
 
 
-    def _send_data(self, topic, data):
+    def _send_data(self, topic, data, qos=0) -> None:
         try:
             print(f'Attempting to publish {topic} with {data}')
-            self._mqtt_client.publish(topic, data)
+            self._mqtt_client.publish(topic, data, qos=qos)
             print(f'Successfully published to {topic}')
         except Exception as ex:
             print(f'Unable to send {topic}: {ex}')
@@ -172,13 +181,14 @@ class Data:
     def _on_connected(self, client, userdata, flags, rc) -> None:
         print(f"Connected to MQTT server")
 
-        self._send_data(self.availability_topic, 'online')
+        self._send_data(self.availability_topic, 'online', qos=1)
         self._send_discovery()
         
         for msg in self.SUBSCRIPTION_TOPICS:
             print(f'subscribing to: {msg[0]}')
             self._mqtt_client.subscribe(msg[0])
             self._mqtt_client.add_topic_callback(msg[0], msg[1])
+        print("Subscribed to all topics")
 
 
     def _on_disconnected(self, userdata, rc) -> None:
@@ -190,8 +200,11 @@ class Data:
     def _on_set(self, client, topic, message):
         '''Handle on/off commands from Home Assistant.'''
         print(f'Received set command: {message}')
+
+        # If a toggle callback is set, call it to send the IR pulse
         if self._toggle_callback:
             self._toggle_callback()
+
         if message.upper() == 'ON':
             self._state = 'ON'
         elif message.upper() == 'OFF':
@@ -199,8 +212,10 @@ class Data:
         else:
             # unknown payload just toggle
             self._state = 'ON' if self._state == 'OFF' else 'OFF'
-        self._send_data(self.state_topic, self._state)
+        
         self._send_data(self.MQTT_TOPIC_IR_TOGGLED, 'mqtt')
+        self._send_data(self.state_topic, self._state)
+        
 
 
     def _on_req_toggle(self, client, topic, message):
@@ -220,8 +235,8 @@ class Data:
         ''' 
             Client requested sending of data
         '''
-        print('Recieved request to send data')
-        self.send_data()
+        print('Received request to send data')
+        self._send_data(self.state_topic, self._state)
 
 
     def _on_debug(self, client, topic, message):

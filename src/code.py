@@ -29,6 +29,7 @@ button = keypad.Keys((INPUT_BUTTON,), value_when_pressed=False, pull=True)
 last = None
 
 def send_pulse():
+    print('Sending IR pulse')
     pulse_out.send(IR_PULSE)
     status.notify_pulse()
 
