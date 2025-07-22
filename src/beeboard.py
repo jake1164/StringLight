@@ -24,6 +24,7 @@ class BeeBoard:
         return (self.vbat_voltage.value/ADC_RESOLUTION*AREF_VOLTAGE*(R1+R2)/R2)
 
 
-    def get_vbus_present():
-        """Detect if VBUS (5V) power source is present"""
+    def get_vbus_present(self):
+        """Detect if VBUS (5V) power source is present."""
         return self.vbus_sense.value
+
